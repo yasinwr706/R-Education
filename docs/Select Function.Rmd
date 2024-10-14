@@ -1,0 +1,73 @@
+---
+title: "Select Functions"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Goal
+
+In this project we will see the usage of select() function in R. It is a function of dplyr package. We will use the data set named [Undergraduate Admission Test Survey in Bangladesh.](https://www.kaggle.com/datasets/ahefatresearch/undergraduate-admission-test-survey-in-bangladesh)
+
+First we need to install the necessary packages for this project and we will also upload the data.
+
+### Upload the Data and Install Packages
+
+```{r, error=FALSE, message=FALSE}
+library(dplyr)
+library(DT)
+Data <- read.csv("C:/Users/yrabb/Downloads/Undergraduate Admission Test Survey in Bangladesh.csv")
+```
+
+This data set has 600 observations and 15 variables.
+
+### Select Variables by Index Positions and Names
+
+```{r}
+Data%>%
+  select(2,3)%>%
+  datatable()
+Data%>%
+  select((c(2,3)))%>%
+  datatable()
+Data%>%
+  select((c('Politics','University')))%>%
+  datatable()
+```
+
+### Drop Variables and Select all Variables between Two Variables
+
+```{r}
+Data%>%select(-c('Politics', 'University'))%>%
+  datatable()
+
+Data%>%select(('Politics':'University'))%>%
+  datatable()
+```
+
+### Select all Variables start and end with
+
+```{r}
+Data%>% select(starts_with('f'))%>%
+  datatable()
+
+Data%>% select(ends_with('s'))%>%
+  datatable()
+```
+
+### Select Variables Containing Characters
+
+```{r}
+Data%>%select(contains('f'))%>%
+  datatable()
+Data%>%select_if(is.numeric)%>%
+  datatable()
+
+```

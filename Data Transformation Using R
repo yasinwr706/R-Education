@@ -1,0 +1,216 @@
+# Data Transformation
+# In this section, we will utilize concepts from the R for Data Science book 
+# to explore data transformation techniques. We will demonstrate 
+# how to perform transformations in R at different levels, 
+# including row-wise, column-wise, and group-wise operations. 
+# These methods are essential for effective data manipulation 
+# and analysis, ensuring that datasets are structured 
+# and prepared for subsequent modeling and visualization tasks.
+
+
+#Install and Load Necessary Packages
+# Here we will create a function which will check
+# whether the packages are inslatted or not.
+# Then depending on that it will install or load 
+# the packages.
+
+#Function to install and load packages
+install_load <- function(packages){
+  for (package in packages){
+    if(!require(package, character.only= TRUE)){
+      install.packages(package, dependencies = TRUE)# Install if not already installed
+      library(package, character.only= TRUE) #Load after installation
+    }else{
+      library(package, character.only = TRUE)# Load if already installed
+    }
+    
+  }
+}
+
+# We will need tidyverse and nycflights13 packages
+
+packages <- c('tidyverse', 'nycflights13')
+install_load(packages)
+
+# Use of glimpse(), View() and print() functions
+
+glimpse(flights)
+view(flights)
+print(flights, width= 10) # I want to see ten rows.
+head(flights, 10) # If it is a regular dataframe then we 
+#should use head.
+#Basic
+
+flights %>% 
+  filter(dest== 'IAH') %>% 
+  group_by(year, month,day) %>% 
+  summarize(arr_delay= mean(arr_delay, na.rm=TRUE))
+
+
+# Row wise Operation: filter(), distinct(), arrange()
+#fliter()
+flights %>% 
+  filter(dep_delay>120)
+
+#Flights that departed on January 1
+
+flights %>% 
+  filter(month==1 & day==1 )
+
+# Flights that departed January or February
+flights %>% 
+  filter(month==1|month==2)
+
+# A shorter way to select flights that departed in January or February
+flights %>% filter(month%in%c(1,2))
+
+
+# arrange
+flights %>% arrange(year, month, day, dep_time)
+
+#desc
+flights %>% arrange(desc(year))
+
+# Remove Duplicate Rows
+flights %>% 
+  distinct()
+# Find all unique origin and destination pairs
+
+flights %>% 
+  distinct(origin, dest)
+# Keep Other Columns
+flights %>% 
+  distinct(origin, dest, .keep_all=TRUE)
+# count()
+flights %>% 
+  count(origin, dest, sort=TRUE)
+
+
+## Coloumn wise Operation
+#We will use mutate(), select(), rename(),
+# and relocate() functions. 
+
+#mutate()
+flights %>% mutate(gain=dep_delay-arr_delay)
+
+#.before argument
+
+flights %>% 
+  mutate(gain= dep_delay-arr_delay, .before= 1)
+
+#.after argument
+
+flights %>% 
+  mutate(gain= dep_delay-arr_delay,
+         .after= day)
+
+#.keep argument
+
+flights %>% 
+  mutate(gain= dep_delay-arr_delay,
+         .keep= 'used')
+
+
+
+
+#select()
+
+flights %>% select(year, month, day)
+
+flights %>% select(year:day)
+flights %>% select(!year:day)
+
+#selecting coloumns with integer
+
+flights %>% select(where(is.integer))
+
+glimpse(flights)
+
+
+## starts_with, ends_with, contains, num_range
+
+flights %>% select(starts_with('d'))
+flights %>% select(ends_with('y'))
+flights %>% select(contains('d'))
+
+#Renaming using select
+
+flights %>% select(tail=tailnum)
+
+#relocate()
+
+flights %>% relocate(time_hour, air_time)
+
+##.before and .after
+
+flights %>% relocate(time_hour, air_time, .before= 1)
+
+flights %>% relocate(time_hour, .after=2)
+
+
+## group_by() and summarize()
+
+
+flights |> 
+  group_by(month)
+
+flights |> group_by(month) |> 
+  summarize(avg= mean(dep_delay, na.rm=TRUE))
+
+flights |> 
+  group_by(month) |> 
+  summarize(
+    av= mean(dep_delay, na.rm=TRUE),
+    n=n()
+  )
+
+
+
+#The slice_function
+
+flights |> 
+  group_by(dest) |> 
+  slice_head(n=1) |> 
+  relocate(dest)
+
+flights |> 
+  group_by(dest) |> 
+  slice_min(arr_delay,n=1) |> 
+  relocate(dest, arr_delay)
+flights |> 
+  group_by(dest) |> 
+  slice_max(arr_delay, n=1) |> 
+  relocate(dest, arr_delay)
+
+flights |> 
+  group_by(dest) |> 
+  slice_max(arr_delay, n=1, with_ties = FALSE) |> 
+  relocate(dest, arr_delay)
+
+
+## Grouping by multiple variabales
+
+dd <- flights |> 
+  group_by(year, month, day)
+daily <- dd |> 
+  summarize(n=n())
+  
+daily <- dd |> 
+  summarize(mean=mean(arr_delay, na.rm=TRUE),
+            .groups= 'drop_last')
+
+#.by
+
+flights |> 
+  summarize(delay= mean(dep_delay, na.rm= TRUE),
+            n=n(),
+            .by= month)
+flights |> 
+  summarize(delay= mean(arr_delay, na.rm=TRUE),
+            n=n(),
+            .by=c(origin, dest))
+
+
+  
+
+

@@ -1,0 +1,96 @@
+#Logical Vectors
+# Install and load the package if necessary
+if (!require("tidyverse", "nycflights13")) {
+  install.packages("tidyverse", "nycflights13")
+  library(tidyverse)
+  library(nycflights13)
+}
+
+# Comparisons
+flights |> 
+  filter(dep_time>600& dep_time<2000&abs(arr_delay)<20)
+
+## Refined Way
+
+flights |> 
+  mutate(daytime= dep_time>600&dep_time<2000,
+         approx_ontime= abs(arr_delay)<20,
+         .keep='used') |> 
+  filter(dep_time&approx_ontime)
+
+#Missing Values
+
+flights |> 
+  summarize(count= sum(is.na(dep_time)))
+
+## arranging the missing values
+
+flights |> 
+  filter(month==1, day==1) |> 
+  arrange(dep_time)
+
+flights |> 
+  filter(month==1, day==1) |> 
+  arrange(desc(is.na(dep_time)), dep_time)
+
+#Summarize
+#Logical summaries
+flights |> 
+  group_by(year, month, day) |> 
+  summarize(all_delayed= all(dep_delay<=60, na.rm=TRUE),
+            any_long_delay= any(arr_delay>=300, na.rm=TRUE),
+            .group= 'drop')
+
+# Numeric Summaries
+flights |> 
+  group_by(year, month, day) |> 
+  summarize(
+    proportion_delayed = mean(dep_delay <= 60, na.rm = TRUE),
+    count_long_delay = sum(arr_delay >= 300, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Logical Sub setting
+flights |> 
+  filter(arr_delay>0) |> 
+  group_by(year, month, day) |> 
+  summarize(
+    behind= mean(arr_delay),
+    n= sum(arr_delay),
+    .groups= 'drop'
+  )
+
+# Logical Sub setting
+flights |> 
+  filter(arr_delay>0) |> 
+  group_by(year, month, day) |> 
+  summarize(
+    behind= mean(arr_delay),
+    n= n(),
+    .groups= 'drop'
+  )
+
+flights |> 
+  group_by(year, month, day) |> 
+  summarize(
+    behind = mean(arr_delay[arr_delay > 0], na.rm = TRUE),
+    ahead = mean(arr_delay[arr_delay < 0], na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  )
+
+# Conditional Transformation
+
+flights |> 
+  mutate(
+    status = case_when(
+      is.na(arr_delay)      ~ "cancelled",
+      arr_delay < -30       ~ "very early",
+      arr_delay < -15       ~ "early",
+      abs(arr_delay) <= 15  ~ "on time",
+      arr_delay < 60        ~ "late",
+      arr_delay < Inf       ~ "very late",
+    ),
+    .keep = "used"
+  )
+  

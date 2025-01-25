@@ -1,0 +1,200 @@
+## Data Transformation Logical Pratice
+#Basic Filtering and Logical Vectors
+# Load the packages
+# Filter the flights that:
+#   
+#   Departed between 10 AM (1000) and 6 PM (1800).
+# Had an arrival delay greater than 10 minutes.
+
+library(tidyverse)
+library(nycflights13)
+glimpse(flights)
+flights |> 
+  filter(dep_time>1000& dep_time<1800&arr_delay >10)
+# So we have 42089 rows.
+# Create a new column called morning_flight that is TRUE 
+# if a flight departed between 6 AM (600) and 12 PM (1200).
+# Use this column to filter all morning flights.
+
+flights |> 
+  mutate(morning_flight=ifelse(dep_time>=600 &dep_time<=1200, TRUE, FALSE)) |> 
+  filter(morning_flight== TRUE)
+
+# there are 122696 rows. 
+
+#Filter all flights where:
+  
+#   The destination is "LAX" (Los Angeles) or "JFK" (New York).
+# The flight was delayed in departure but arrived on time or early.
+flights |> 
+  filter(dest=='LAX'|dest=='JFK') |> 
+  filter(dep_delay>10&arr_delay<=0)
+
+## Total 798 rows. 
+
+# Handling Missing Values
+
+#Count the total number of missing values (NA) 
+#in the arr_delay column.
+flights |> 
+  summarize(missing=sum(is.na(arr_delay)))
+
+# Total 9430.
+# Filter and display flights on February 1 where dep_time is missing. 
+# Arrange these flights by sched_dep_time in ascending order.
+flights |> 
+  filter(month==2&day==1&is.na(dep_time)) |> 
+  arrange()
+
+#Replace missing values in the air_time column with the average air time for all flights.
+
+flights |> 
+  mutate(air_time= ifelse(is.na(air_time), mean(air_time, na.rm=TRUE), air_time))
+
+
+## Summarizing the Data
+# Group the flights by carrier and calculate:
+#   
+#   The average arrival delay (arr_delay).
+# The proportion of flights delayed by more than 15 minutes.
+
+flights |> 
+  group_by(carrier) |> 
+  summarize(average_arrival_delay= mean(arr_delay, na.rm=TRUE),
+            Prop= sum(dep_delay>15, na.rm= TRUE)/n())
+
+
+# For each day of the year, calculate:
+#   
+#   The number of flights delayed more than 1 hour.
+# The total number of flights.
+# The percentage of flights delayed more than 1 hour.
+
+flights |> 
+  group_by(year, month, day) |> 
+  summarize( flights_delay=sum(dep_delay>60, na.rm=TRUE),
+            total_flig= n(),
+            percentage= sum(dep_delay>60, na.rm=TRUE)/n())
+
+#Find the day in each month with the highest average arrival delay.
+
+flights |> 
+  group_by(year, month, day) |> 
+  summarize(
+    avg_arrival_delay = mean(arr_delay, na.rm = TRUE)
+    
+  ) |> 
+  group_by(year, month) |> 
+  filter(avg_arrival_delay == max(avg_arrival_delay, na.rm = TRUE)) 
+
+glimpse(flights)
+
+## Conditional Transformations
+# Conditional Transformations
+# Create a new column delay_category:
+#   
+#   "No Delay" for flights with arr_delay <= 0.
+# "Short Delay" for delays between 1 and 30 minutes.
+# "Moderate Delay" for delays between 31 and 60 minutes.
+# "Long Delay" for delays greater than 60 minutes.
+
+flights |> 
+  mutate(
+    delay_category = case_when(
+      arr_delay <= 0 ~ "No Delay",
+      arr_delay > 0 & arr_delay <= 30 ~ "Short Delay",
+      arr_delay > 30 & arr_delay <= 60 ~ "Moderate Delay",
+      arr_delay > 60 ~ "Long Delay",
+      is.na(arr_delay)~ "Cancelled"),
+    .keep= 'used'
+  )
+
+# Create another column departure_time_category:
+#   
+#   "Early Morning" for departures before 6 AM.
+# "Morning" for departures between 6 AM and 12 PM.
+# "Afternoon" for departures between 12 PM and 6 PM.
+# "Evening" for departures after 6 PM.
+
+flights |> 
+  mutate(
+    departure_time_category= case_when(
+      dep_time<600~ "Early Morning",
+      dep_time > 600 & dep_time <= 1200 ~ "Morning",
+      dep_time > 1200 & dep_time <= 1800 ~ "Afternoon",
+      dep_time > 1800 ~ "Evening",
+      is.na(dep_time)~ "Cancelled"),
+    .keep= 'used'
+    )
+
+## Advanced Summarization
+# Group flights by destination and calculate:
+#   
+#   The average departure delay.
+# The number of flights to that destination.
+# The proportion of flights delayed by more than 30 minutes.
+#   
+
+flights |> 
+  group_by(dest) |> 
+  summarize(
+    average= mean(dep_delay, na.rm=TRUE),
+    dest= n(),
+    prop= sum(dep_delay>30, na.rm=TRUE)/n()
+  )
+# Group flights by origin and carrier and calculate:
+#   
+#   The total number of flights.
+# The percentage of flights delayed more than 15 minutes.
+
+flights |> 
+  group_by(origin, carrier) |> 
+  summarize(flights= n(),
+            ff= sum(dep_delay>15, na.rm=TRUE)/n())
+
+# Create a summary for each month where:
+#   
+#   You find the longest flight (maximum air_time).
+# You count the number of canceled flights (NA in arr_delay).
+
+flights |> 
+  summarize(
+    max = max(arr_delay, na.rm = TRUE),
+    na = sum(is.na(arr_delay))
+  )
+
+# Logical Subsetting
+# Filter all flights where:
+#   
+#   Departure and arrival delays are both greater than 30 minutes.
+# The departure delay is more than twice the arrival delay.
+
+flights |> 
+  filter(dep_delay>30&arr_delay>30)
+
+# Calculate for each day:
+#   
+#   The average arrival delay for flights with positive delays.
+# The average arrival delay for flights with negative delays.
+# The total number of flights.
+#             
+
+flights |> 
+  group_by(day) |> 
+  summarize(positive= mean(arr_delay>0, na.rm=TRUE),
+            negative= mean(arr_delay,0, na.rm=TRUE),
+            flights= n())
+# Cross-Column Transformation
+flights |> 
+  mutate(total_delay= (dep_delay+arr_delay), .after= 1) |> 
+  filter(total_delay>240,
+          )
+  
+# Add a column delay_ratio as the ratio of 
+# arr_delay to dep_delay. 
+# Use this to find flights where 
+# the arrival delay was more than twice the departure delay.
+
+flights |> 
+  mutate(delay_ratio= (arr_delay/dep_delay), .afetr=1) |> 
+  filter(delay_ratio>2)

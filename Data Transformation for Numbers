@@ -1,0 +1,177 @@
+# Load the required Libraries
+library(tidyverse)
+library(nycflights13)
+# Making Numbers
+
+x= c('1.2', '5.6', '1e3')
+y=parse_double(x)
+
+x= c("$1,234", 'USD31468', "56785%")
+y=parse_number(x)
+
+##Counts
+flights |> count(dest)
+
+glimpse(flights)
+
+flights |> group_by(year) |> 
+  count(dest)
+#sorting
+flights |> 
+  count(dest, sort=TRUE)
+# Otherway
+
+flights |> 
+  group_by(dest) |> 
+  summarize(
+    n=n(),
+    delay= mean(arr_delay, na.rm= TRUE)
+  )
+
+#n_distinc(x)
+
+flights |> 
+  group_by(dest) |> 
+  summarize(carriers= n_distinct(carrier)) |> 
+  arrange(desc(carriers))
+
+# sum
+
+flights |> 
+  group_by(tailnum) |> 
+  summarize(miles= sum(distance))
+
+# weight
+flights |> count(tailnum, wt=distance)
+
+flights |> 
+  group_by(dest) |> 
+  summarize(n_cancelled= sum(is.na(dep_time)))
+
+#Minimum and Maximum
+
+df <-  tribble(
+  ~x, ~y,
+  1,3,
+  5,2,
+  7, NA,
+)
+
+df |> 
+  mutate(min= pmin(x,y, na.rm=TRUE),
+         max= pmax(x, y, na.rm=TRUE)
+  )
+
+flights |> 
+  filter(month == 1, day == 1) |> 
+  ggplot(aes(x = sched_dep_time, y = dep_delay)) +
+  geom_point()
+
+# Define the two groups
+group_a <- c(55, 60, 65, 70, 75, 80, 85, 90, 95, 100)
+group_b <- c(50, 55, 60, 65, 70, 75, 80, 85, 90, 120)
+
+# Calculate specific quantiles (Q1, Q2/Median, Q3)
+quantiles <- quantile(group_a , probs = c(0.25, 0.5, 0.75))
+quantiles_a <- quantile(group_b , probs = c(0.25, 0.5, 0.75))
+
+
+flights |> 
+  group_by(year, month, day) |> 
+  summarize(
+    mean= mean(dep_delay, na.rm= TRUE),
+    median= median(dep_delay, na.rm= TRUE),
+    n= n(),
+    .groups= 'drop'
+  )
+
+
+flights |> 
+  group_by(year, month, day) |> 
+  summarize(
+    mean= mean(dep_delay, na.rm= TRUE),
+    median= median(dep_delay, na.rm= TRUE),
+    n= n()
+  )
+
+flights |> 
+  group_by(year, month, day) |> 
+  summarize(mean = mean(dep_delay, na.rm = TRUE), .groups = "rowwise")
+
+
+flights |> 
+  group_by(year, month, day) |> 
+  summarize(
+    mean = mean(dep_delay, na.rm = TRUE),
+    median = median(dep_delay, na.rm = TRUE),
+    n = n(),
+    .before = mean  # Place new columns before `n`
+  )
+
+flights |> 
+  group_by(year, month, day) |> 
+  mutate(
+    mean = mean(dep_delay, na.rm = TRUE),
+    median = median(dep_delay, na.rm = TRUE),
+    n = n(),
+    .after = 2  # Place new columns after `day`
+  )
+
+library(dplyr)
+
+ flights |> 
+  group_by(year, month, day) |> 
+  summarize(
+    mean = mean(dep_delay, na.rm = TRUE),
+    median = median(dep_delay, na.rm = TRUE),
+    n = n()
+  ) |> 
+  select(year, month, day, mean, median, n)
+ 
+ ## Minimum, maximum, quantiles
+ 
+ flights |> 
+   group_by(year) |> 
+   mutate(
+     max= max(dep_delay, na.rm= TRUE),
+     min= min(dep_delay, na.rm= TRUE),
+     q95= quantile(dep_delay, 0.95, na.rm=TRUE),
+   .keep="used")
+
+ 
+ flights |>
+  group_by(year, month, day) |>
+  summarize(
+    max = max(dep_delay, na.rm = TRUE),
+    q95 = quantile(dep_delay, 0.95, na.rm = TRUE),
+    .groups = "drop"
+  )
+ flights |>
+   group_by(year, month, day) |>
+   summarize(
+     max = max(dep_delay, na.rm = TRUE),
+     q95 = quantile(dep_delay, 0.95, na.rm = TRUE),
+     .groups = "drop"
+   )
+## Spread
+ flights |> 
+   group_by(origin, dest) |> 
+              summarize(
+                dist_iqr= IQR(distance),
+                n=n(),
+                .groups= 'drop') |> 
+   filter(dist_iqr>0)
+ 
+# Position
+ flights |> 
+   group_by( origin, dest) |> 
+   summarize(
+     first_dep= first(dep_time, na_rm = TRUE),
+     last_dep= last(dep_time, na_rm = TRUE),
+     fifth_dp= nth(dep_time,5, na_rm = TRUE),
+   )
+ 
+ flights |> 
+   group_by(year, month, day) |> 
+   mutate(r= min_rank(sched_dep_time)) |> 
+   filter(r== 1|r== max(r))

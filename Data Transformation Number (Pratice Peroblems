@@ -1,0 +1,177 @@
+if (!require("palmerpenguins")) {
+  install.packages("palmerpenguins")
+  library(palmerpenguins)
+}
+glimpse(penguins)
+
+# Pratice questions
+# 1. Basic Data Exploration
+# Use glimpse() or summary() to explore the structure of the penguins dataset.
+# 
+# How many rows and columns are in the penguins dataset?
+#   
+#   What are the unique species of penguins in the dataset?
+
+glimpse(penguins)
+summary(penguins)
+#There are 344 rows and 8 columns. 
+penguins |> 
+  distinct(species)
+
+# 3 unique species. 
+# 2. Data Cleaning
+# Check for missing values in the penguins dataset. How many missing values are there in each column?
+#   
+#   Remove rows with missing values and store the result in a new dataset called penguins_clean
+penguins |> 
+  summarize(across(everything(), ~ sum(is.na(.))))
+
+colSums(is.na(penguins))
+penguins_cleaned <- penguins |> 
+  drop_na()
+
+dim(penguins_cleaned)
+
+# Missing observations are dropped and now we have 338 rows and 8 columns. 
+
+
+# 3. Summarization
+# Calculate the mean, median, and standard deviation of body_mass_g for each species.
+# 
+# Find the maximum and minimum flipper_length_mm for each island.
+# 
+# Count the number of penguins for each combination of species and island.
+
+penguins_cleaned |>
+  group_by(species) |> 
+  summarize(mean= mean(body_mass_g),
+            median= median(body_mass_g),
+            sd= sd(body_mass_g))
+
+penguins_cleaned |>
+  group_by(island) |> 
+  summarize(max= max(flipper_length_mm),
+            min= min(flipper_length_mm)
+            )
+
+penguins_cleaned |> 
+  group_by(species, island) |> 
+  summarize(count= n())
+
+# 4. Grouping and Filtering
+# Filter the dataset to include only penguins with a body_mass_g greater than 4000.
+# 
+# Group the dataset by species and calculate the average bill_length_mm and bill_depth_mm for each species.
+
+penguins |> 
+  filter(body_mass_g>4000)
+# 172 penguins
+
+penguins |> 
+  group_by(species) |> 
+  summarize(mean_length= mean(bill_length_mm, na.rm= TRUE),
+            mean_depth= mean(bill_depth_mm, na.rm= TRUE))
+
+# 5. Advanced Summarization
+# For each species, calculate the 25th, 50th (median), and 75th percentiles of body_mass_g.
+# 
+# Create a new column called size_category that categorizes penguins as "Small" (body mass < 3500), "Medium" (3500 ≤ body mass < 4500), and "Large" (body mass ≥ 4500).
+# 
+
+penguins |> 
+  group_by(species) |> 
+  summarize(
+    q1= quantile(body_mass_g, 0.25, na.rm=TRUE),
+    q2= quantile(body_mass_g, 0.50, na.rm=TRUE),
+    q3= quantile(body_mass_g, 0.75, na.rm=TRUE)
+  )
+
+
+penguins |> 
+  mutate(size_category= case_when(
+    body_mass_g<3500 ~ 'Small',
+    body_mass_g>=3500 & body_mass_g<4500 ~ 'Medium',
+    body_mass_g>=4500 ~ 'Large',
+    TRUE~ NA_character_,# Take Care of Missing Values
+  ),
+  .keep= 'used'
+  )
+  
+
+penguins |> 
+  mutate(size_category= case_when(
+    is.na(body_mass_g) ~ 'No Data',
+    body_mass_g<3500 ~ 'Small',
+    body_mass_g>=3500 & body_mass_g<4500 ~ 'Medium',
+    body_mass_g>=4500 ~ 'Large',
+    
+  ),
+  .keep= 'used'
+  )
+
+##7. Advanced Manipulation
+# Use mutate() to create a new column called bill_ratio that is the ratio of bill_length_mm to bill_depth_mm.
+# 
+# Group the dataset by species and island, and calculate the average bill_ratio for each group.
+# 
+# Find the penguin with the longest flipper_length_mm for each species.
+
+
+penguins |> 
+  mutate(
+    bill_ratio= (bill_length_mm/ bill_depth_mm)
+    
+  ) |> 
+  group_by(species, island) |> 
+  summarize(av= mean(bill_ratio, na.rm= TRUE))
+
+penguins |> 
+  group_by(species) |> 
+  summarize(ma= max(flipper_length_mm, na.rm=TRUE))
+
+
+#Combining the Data
+
+penguins_summary <- penguins |> 
+  group_by(species, island) |> 
+  summarize(mean_mass= mean(body_mass_g, na.rm=TRUE),
+            meanfilp= mean(flipper_length_mm, na.rm=TRUE),
+            .groups= 'drop')
+penguins_summry_join <- penguins |> 
+  left_join(penguins_summary, by= c('species', 'island'))
+
+
+# Position-based Operations
+# For each species, find the first and last observation based on bill_length_mm.
+# 
+# Use min_rank() to rank penguins within each species by body_mass_g and filter to keep only the top 3 heaviest penguins for each species.
+
+
+penguins_cleaned |> 
+  group_by(species) |> 
+  summarize(first= first(bill_length_mm),
+            last= last(bill_length_mm),
+            med= nth(bill_length_mm, 50))
+
+penguins_cleaned |> 
+  group_by(species) |> 
+  summarize(rank=min_rank(body_mass_g)) |> 
+  filter(rank<=3) |> 
+  arrange(species, rank)
+
+# spread/IQR
+# Calculate the interquartile range (IQR) of flipper_length_mm for each species.
+# 
+# Filter the dataset to include only species where the IQR of flipper_length_mm is greater than 10.
+# 
+
+penguins_cleaned |> 
+  group_by(species) |> 
+  summarize(IQ= IQR(flipper_length_mm)) |> 
+  filter(IQ>=10)
+
+
+
+
+
+
